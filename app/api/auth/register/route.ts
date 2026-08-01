@@ -39,7 +39,11 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (organizationInsert.error || !organizationInsert.data) {
-    await supabaseAdmin.auth.admin.deleteUser(user.id).catch(() => null);
+    try {
+      await supabaseAdmin.auth.admin.deleteUser(user.id);
+    } catch {
+      // ignore cleanup failure
+    }
     return NextResponse.json({ error: 'Não foi possível criar a organização.' }, { status: 500 });
   }
 
@@ -51,8 +55,16 @@ export async function POST(request: NextRequest) {
   });
 
   if (userInsert.error) {
-    await supabaseAdmin.from('organizations').delete().eq('id', organizationId).catch(() => null);
-    await supabaseAdmin.auth.admin.deleteUser(user.id).catch(() => null);
+    try {
+      await supabaseAdmin.from('organizations').delete().eq('id', organizationId);
+    } catch {
+      // ignore cleanup failure
+    }
+    try {
+      await supabaseAdmin.auth.admin.deleteUser(user.id);
+    } catch {
+      // ignore cleanup failure
+    }
     return NextResponse.json({ error: 'Não foi possível criar o usuário da organização.' }, { status: 500 });
   }
 
