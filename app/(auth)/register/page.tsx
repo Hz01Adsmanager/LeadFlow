@@ -14,21 +14,26 @@ export default function RegisterPage() {
     setStatus(null);
     setLoading(true);
 
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, organizationName })
-    });
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, organizationName })
+      });
 
-    const data = await response.json();
-    setLoading(false);
+      const data = await response.json();
 
-    if (!response.ok) {
-      setStatus(data.error ?? 'Não foi possível criar a organização.');
-      return;
+      if (!response.ok) {
+        setStatus(data?.error ?? 'Não foi possível criar a organização.');
+        return;
+      }
+
+      setStatus('Conta criada com sucesso! Verifique seu email e faça login.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Não foi possível criar a organização.');
+    } finally {
+      setLoading(false);
     }
-
-    setStatus('Conta criada com sucesso! Verifique seu email e faça login.');
   };
 
   return (
