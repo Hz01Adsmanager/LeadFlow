@@ -11,26 +11,28 @@ export async function POST(request: NextRequest) {
     };
 
     if (!email || !password || !organizationName) {
-      return NextResponse.json({ error: 'Preencha email, senha e nome da organização.' }, { status: 400 });
-    }
+    console.error('Register request missing fields', { email, organizationName, password });
+    return NextResponse.json({ error: 'Preencha email, senha e nome da organização.' }, { status: 400 });
+  }
 
-    const signUpResult = await supabaseAdmin.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          organization_name: organizationName
-        }
+  const signUpResult = await supabaseAdmin.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        organization_name: organizationName
       }
-    });
-
-    if (signUpResult.error) {
-      return NextResponse.json({ error: signUpResult.error.message }, { status: 400 });
     }
+  });
 
-    const user = signUpResult.data.user;
-    if (!user) {
-      return NextResponse.json({ error: 'Não foi possível criar o usuário.' }, { status: 500 });
+  if (signUpResult.error) {
+    console.error('Supabase signUp error', signUpResult.error);
+    return NextResponse.json({ error: signUpResult.error.message }, { status: 400 });
+  }
+
+  const user = signUpResult.data.user;
+  if (!user) {
+    console.error('Supabase signUp returned no user', signUpResult.data);
     }
 
     const organizationInsert = await supabaseAdmin
@@ -40,10 +42,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (organizationInsert.error || !organizationInsert.data) {
+      console.error('Organization insert error', organizationInsert.error, organizationInsert.data);
       try {
         await supabaseAdmin.auth.admin.deleteUser(user.id);
-      } catch {
-        // ignore cleanup failure
+      } catch (cleanupError) {
+        console.error('Cleanup deleteUser error', cleanupError);
       }
       return NextResponse.json({ error: 'Não foi possível criar a organização.' }, { status: 500 });
     }
@@ -56,15 +59,16 @@ export async function POST(request: NextRequest) {
     });
 
     if (userInsert.error) {
+      console.error('User insert error', userInsert.error);
       try {
         await supabaseAdmin.from('organizations').delete().eq('id', organizationId);
-      } catch {
-        // ignore cleanup failure
+      } catch (cleanupError) {
+        console.error('Cleanup delete organization error', cleanupError);
       }
       try {
         await supabaseAdmin.auth.admin.deleteUser(user.id);
-      } catch {
-        // ignore cleanup failure
+      } catch (cleanupError) {
+        console.error('Cleanup deleteUser error', cleanupError);
       }
       return NextResponse.json({ error: 'Não foi possível criar o usuário da organização.' }, { status: 500 });
     }

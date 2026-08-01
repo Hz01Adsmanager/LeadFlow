@@ -24,22 +24,14 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setStatus(data?.error ?? 'Não foi possível criar a organização.');
+        console.error('Register API error', response.status, data);
+        setStatus(data?.error ?? JSON.stringify(data) ?? 'Não foi possível criar a organização.');
         return;
       }
 
       setStatus('Conta criada com sucesso! Verifique seu email e faça login.');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Não foi possível criar a organização.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold text-slate-900">Criar nova organização</h1>
+      console.error('Register fetch failed', error);
         <p className="mt-2 text-sm text-slate-600">Insira suas credenciais para criar uma organização e começar a coletar leads.</p>
       </div>
       <form className="space-y-6" onSubmit={handleSubmit}>
